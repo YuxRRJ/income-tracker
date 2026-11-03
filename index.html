@@ -10,7 +10,7 @@
     --accent:#c96442; --accent-ink:#ffffff; --accent-soft:#f6e6de;
     --work:#3a77a8; --other:#d9a23a;
     --self:#7a5bb5; --self-soft:#ece6f7; --shop:#b3412e; --shop-soft:#fbe3de; --hol:#2f7d4f; --hol-soft:#dff1e5;
-    --today:#c96442;
+    --today:#c96442; --extra:#9a6510;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -18,7 +18,7 @@
       --accent:#e08560; --accent-ink:#1c1a17; --accent-soft:#3d2b22;
       --work:#6aa6d6; --other:#e6b75a;
       --self:#b39be0; --self-soft:#352d45; --shop:#ee8a76; --shop-soft:#47291f; --hol:#79c597; --hol-soft:#21392a;
-      --today:#e08560;
+      --today:#e08560; --extra:#e6b75a;
     }
   }
   :root[data-theme="dark"] {
@@ -26,7 +26,7 @@
     --accent:#e08560; --accent-ink:#1c1a17; --accent-soft:#3d2b22;
     --work:#6aa6d6; --other:#e6b75a;
     --self:#b39be0; --self-soft:#352d45; --shop:#ee8a76; --shop-soft:#47291f; --hol:#79c597; --hol-soft:#21392a;
-    --today:#e08560;
+    --today:#e08560; --extra:#e6b75a;
   }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink); font-family:"Microsoft JhengHei","Noto Sans TC",system-ui,sans-serif; font-size:17px; line-height:1.5; }
@@ -67,7 +67,8 @@
   .day .n { font-size:14px; color:var(--muted); }
   .day .h { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1; }
   .day .h small { font-size:13px; font-weight:400; color:var(--muted); margin-left:2px; }
-  .day .note { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .day .extra { font-size:12px; font-weight:800; color:var(--extra); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tagx { display:inline-block; font-size:11px; font-weight:800; background:var(--other); color:#fff; border-radius:999px; padding:0 7px; margin-left:6px; vertical-align:2px; }
   .day.self { background:var(--self-soft); border-color:transparent; }
   .day.shop { background:var(--shop-soft); border-color:transparent; }
   .day.hol  { background:var(--hol-soft);  border-color:transparent; }
@@ -115,7 +116,13 @@
   .tagpick button[aria-pressed="true"].self { background:var(--self); border-color:var(--self); color:#fff; }
   .tagpick button[aria-pressed="true"].shop { background:var(--shop); border-color:var(--shop); color:#fff; }
   .tagpick button[aria-pressed="true"].hol  { background:var(--hol);  border-color:var(--hol);  color:#fff; }
-  .dlg .note-in { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+  dialog { max-height:calc(100dvh - 32px); overflow:auto; }
+  .xlist { list-style:none; margin:0 0 8px; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .xlist li { display:flex; justify-content:space-between; align-items:center; background:var(--soft); border-radius:10px; padding:6px 6px 6px 12px; font-weight:700; }
+  .xlist button { border:0; background:none; color:var(--muted); font-size:20px; line-height:1; padding:2px 8px; }
+  .xadd { display:grid; grid-template-columns:1fr 100px auto; gap:6px; }
+  .xadd input { padding:9px 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); min-width:0; }
+  .xadd button { border:0; border-radius:10px; background:var(--soft); font-weight:700; padding:0 14px; }
   .dlg .acts { display:flex; justify-content:space-between; gap:8px; }
   footer { margin-top:28px; text-align:center; font-size:14px; color:var(--muted); }
   footer button { border:0; background:none; color:var(--muted); text-decoration:underline; }
@@ -128,7 +135,7 @@
     .cal { gap:4px; }
     .day { min-height:68px; padding:5px; border-radius:10px; }
     .day .h { font-size:17px; }
-    .day .h small, .day .note { display:none; }
+    .day .h small, .day .extra .t { display:none; }
     .chip { padding:0 5px; }
     .chip .f { display:none; } .chip .s { display:inline; }
     .addform { grid-template-columns:1fr 1fr; }
@@ -166,7 +173,7 @@
       <span><i style="background:var(--self)"></i>自休</span>
       <span><i style="background:var(--shop)"></i>店休</span>
       <span><i style="background:var(--hol)"></i>國定假日</span>
-      <span>點日期就能填工時、休息日和備註</span>
+      <span>點日期就能填工時、休息日和加碼項目</span>
     </div>
     <div class="cal" id="cal"></div>
   </section>
@@ -181,7 +188,7 @@
     </form>
     <div class="card">
       <ul class="list" id="incList"></ul>
-      <div class="total"><span>本月其他收入</span><span id="incTotal"></span></div>
+      <div class="total"><span>本月加碼與其他收入</span><span id="incTotal"></span></div>
     </div>
   </section>
 
@@ -192,7 +199,7 @@
     <div class="kpis" id="repKpis"></div>
     <div class="grid2">
       <div class="card"><h3 id="chartTitle"></h3><div class="legend" id="chartLegend"></div><div id="chart"></div></div>
-      <div class="card"><h3>其他收入明細</h3><ul class="list break" id="breakList"></ul></div>
+      <div class="card"><h3>加碼與其他收入明細</h3><ul class="list break" id="breakList"></ul></div>
     </div>
   </section>
 
@@ -212,8 +219,14 @@
       <div class="tagpick" id="tagpick"></div>
     </div>
     <div>
-      <label for="dNote">其他項目／備註</label>
-      <input id="dNote" class="note-in" maxlength="40" placeholder="例如：國慶加班、代班">
+      <label>加碼項目（填金額，會記到記帳本）</label>
+      <ul class="xlist" id="xList"></ul>
+      <div class="quick" id="xQuick" style="margin:0 0 8px"><button type="button" data-item="洗東西" data-amt="250">＋ 洗東西 250</button></div>
+      <div class="xadd">
+        <input id="xItem" maxlength="20" list="items" placeholder="其他項目" aria-label="加碼項目名稱">
+        <input id="xAmt" type="number" min="1" inputmode="numeric" placeholder="金額" aria-label="加碼金額">
+        <button type="button" id="xAdd">加入</button>
+      </div>
     </div>
     <div class="acts">
       <button type="button" class="btn ghost" id="dClear">清除這天</button>
@@ -226,7 +239,7 @@
 </dialog>
 
 <script>
-const KEY = 'income-tracker-demo';
+const KEY = 'income-tracker-demo-v2';
 const TAGS = [{ id: '自休', cls: 'self', s: '自' }, { id: '店休', cls: 'shop', s: '店' }, { id: '國定假日', cls: 'hol', s: '假' }];
 const pad = n => String(n).padStart(2, '0');
 const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -246,13 +259,13 @@ function seed() {
     if (wd === 1) { if (d.getDate() % 14 < 7) tags = ['店休']; }
     else if (wd === 0 || wd === 6) h = [6, 6.5, 7, 7.5, 8][Math.floor(rnd() * 5)];
     else { const x = rnd(); if (x >= 0.3) { if (x < 0.38) tags = ['自休']; else h = Math.round((2 + rnd() * 4) * 4) / 4; } }
-    if (h || tags.length) days[ymd(d)] = { h, tags, note: '' };
+    if (h || tags.length) days[ymd(d)] = { h, tags };
   }
   for (const k of ['2026-02-17', '2026-04-04', '2026-06-19', '2026-09-25', '2026-10-10']) {
-    days[k] = { h: days[k]?.h || 0, tags: ['國定假日'], note: '' };
+    days[k] = { h: days[k]?.h || 0, tags: ['國定假日'] };
   }
-  days['2026-10-10'].h = 8; days['2026-10-10'].note = '國慶加班';
-  days['2026-10-22'] = { h: 4, tags: [], note: '幫同事代班' };
+  days['2026-10-10'].h = 8;
+  days['2026-10-22'] = { h: 4, tags: [] };
   const incomes = [];
   let id = 1;
   for (let m = 2; m <= 11; m++) {
@@ -262,6 +275,11 @@ function seed() {
   [['2026-02-20', '獎學金', 5000], ['2026-03-25', '發票中獎', 500], ['2026-04-18', '二手拍賣', 1240],
    ['2026-05-30', '生日紅包', 3000], ['2026-07-15', '獎學金', 5000], ['2026-09-12', '二手拍賣', 860]]
     .forEach(([date, item, amount]) => incomes.push({ id: id++, date, item, amount }));
+  let r2 = 11;
+  const rnd2 = () => (r2 = (r2 * 16807) % 2147483647) / 2147483647;
+  for (let d = new Date(2026, 1, 1); d <= end; d.setDate(d.getDate() + 1)) {
+    if ((d.getDay() === 5 || d.getDay() === 6) && rnd2() > 0.3) incomes.push({ id: id++, date: ymd(d), item: '洗東西', amount: 250, src: 'day' });
+  }
   return { wage: 190, days, incomes, nextId: id };
 }
 function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.days && s.incomes) return s; } catch (e) {} return seed(); }
@@ -295,32 +313,55 @@ function renderCalendar() {
   const first = (new Date(cy, cm, 1).getDay() + 6) % 7, total = new Date(cy, cm + 1, 0).getDate();
   let html = '一二三四五六日'.split('').map(d => `<div class="dow">${d}</div>`).join('');
   html += '<div class="day blank"></div>'.repeat(first);
+  const exBy = {};
+  state.incomes.filter(i => i.src === 'day' && i.date.startsWith(p)).forEach(i => (exBy[i.date] = exBy[i.date] || []).push(i));
   for (let d = 1; d <= total; d++) {
-    const k = `${p}-${pad(d)}`, v = state.days[k];
+    const k = `${p}-${pad(d)}`, v = state.days[k], ex = exBy[k] || [];
     const tag = v && TAGS.find(t => v.tags.includes(t.id));
     const cls = ['day', tag ? tag.cls : '', k === ymd(today) ? 'today' : ''].join(' ');
     html += `<button class="${cls}" data-k="${k}"><span class="n">${d}</span>` +
       (v && v.h ? `<span class="h">${hrs(v.h)}<small>小時</small></span>` : '') +
       (v ? v.tags.map(id => { const t = TAGS.find(x => x.id === id); return `<span class="chip ${t.cls}"><span class="f">${t.id}</span><span class="s">${t.s}</span></span>`; }).join('') : '') +
-      (v && v.note ? `<span class="note">${esc(v.note)}</span>` : '') + '</button>';
+      (ex.length ? `<span class="extra">+${ex.reduce((a, i) => a + i.amount, 0)}<span class="t"> ${esc([...new Set(ex.map(i => i.item))].join('、'))}</span></span>` : '') + '</button>';
   }
   $('cal').innerHTML = html;
 }
 
-let editing = null;
+let editing = null, draft = [];
+const isExtraOf = k => i => i.src === 'day' && i.date === k;
+function fillItems() { $('items').innerHTML = [...new Set(state.incomes.map(i => i.item))].map(s => `<option value="${esc(s)}">`).join(''); }
 function openDay(k) {
   editing = k;
-  const v = state.days[k] || { h: 0, tags: [], note: '' };
+  const v = state.days[k] || { h: 0, tags: [] };
   const [y, m, d] = k.split('-').map(Number);
   $('dlgTitle').textContent = `${m} 月 ${d} 日（${'日一二三四五六'[new Date(y, m - 1, d).getDay()]}）`;
   $('dHours').value = v.h || '';
-  $('dNote').value = v.note || '';
+  draft = state.incomes.filter(isExtraOf(k)).map(i => ({ item: i.item, amount: i.amount }));
+  $('xItem').value = ''; $('xAmt').value = '';
+  fillItems(); renderDraft();
   $('quick').innerHTML = [0, 3, 4, 5, 6, 7, 8].map(n => `<button type="button" data-h="${n}">${n === 0 ? '沒上班' : n + ' 小時'}</button>`).join('');
   $('tagpick').innerHTML = TAGS.map(t => `<button type="button" class="${t.cls}" data-t="${t.id}" aria-pressed="${v.tags.includes(t.id)}">${t.id}</button>`).join('');
   updatePay();
   $('dlg').showModal();
 }
-function updatePay() { const h = parseFloat($('dHours').value) || 0; $('dPay').textContent = h ? `≈ ${money(h * state.wage)}` : ''; }
+function updatePay() {
+  const t = (parseFloat($('dHours').value) || 0) * state.wage + draft.reduce((a, x) => a + x.amount, 0);
+  $('dPay').textContent = t ? `當天 ≈ ${money(t)}` : '';
+}
+function renderDraft() {
+  $('xList').innerHTML = draft.map((x, n) => `<li><span>${esc(x.item)}　${money(x.amount)}</span><button type="button" data-n="${n}" aria-label="移除">×</button></li>`).join('');
+  updatePay();
+}
+function addDraft(item, amount) {
+  item = item.trim(); amount = Math.round(+amount);
+  if (!item || !(amount > 0)) return false;
+  draft.push({ item, amount }); renderDraft(); return true;
+}
+function addTyped() { if (addDraft($('xItem').value, $('xAmt').value)) { $('xItem').value = ''; $('xAmt').value = ''; } }
+$('xList').addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (b) { draft.splice(+b.dataset.n, 1); renderDraft(); } });
+$('xQuick').addEventListener('click', e => { const b = e.target.closest('[data-item]'); if (b) addDraft(b.dataset.item, b.dataset.amt); });
+$('xAdd').onclick = addTyped;
+[$('xItem'), $('xAmt')].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addTyped(); } }));
 $('cal').addEventListener('click', e => { const b = e.target.closest('.day[data-k]'); if (b) openDay(b.dataset.k); });
 $('dHours').addEventListener('input', updatePay);
 $('quick').addEventListener('click', e => { const b = e.target.closest('[data-h]'); if (!b) return; $('dHours').value = b.dataset.h === '0' ? '' : b.dataset.h; updatePay(); });
@@ -333,21 +374,27 @@ $('tagpick').addEventListener('click', e => {
 $('dayForm').addEventListener('submit', () => {
   const h = Math.max(0, Math.min(24, parseFloat($('dHours').value) || 0));
   const tags = [...$('tagpick').querySelectorAll('[aria-pressed="true"]')].map(b => b.dataset.t);
-  const note = $('dNote').value.trim();
-  if (h || tags.length || note) state.days[editing] = { h, tags, note }; else delete state.days[editing];
+  addTyped();
+  if (h || tags.length) state.days[editing] = { h, tags }; else delete state.days[editing];
+  state.incomes = state.incomes.filter(i => !isExtraOf(editing)(i));
+  draft.forEach(x => state.incomes.push({ id: state.nextId++, date: editing, item: x.item, amount: x.amount, src: 'day' }));
   save(); render();
 });
-$('dClear').onclick = () => { delete state.days[editing]; save(); $('dlg').close(); render(); };
+$('dClear').onclick = () => {
+  delete state.days[editing];
+  state.incomes = state.incomes.filter(i => !isExtraOf(editing)(i));
+  save(); $('dlg').close(); render();
+};
 $('dCancel').onclick = () => $('dlg').close();
 
 function renderLedger() {
   const p = monthKey(cy, cm);
   const rows = state.incomes.filter(i => i.date.startsWith(p)).sort((a, b) => b.date.localeCompare(a.date));
   $('incList').innerHTML = rows.length ? rows.map(i =>
-    `<li><span class="date">${i.date.slice(5).replace('-', '/')}</span><span>${esc(i.item)}</span><span class="amt">${money(i.amount)}</span>` +
-    `<button class="del" data-id="${i.id}" aria-label="刪除">×</button></li>`).join('') : '<li class="empty">這個月還沒有其他收入</li>';
+    `<li><span class="date">${i.date.slice(5).replace('-', '/')}</span><span>${esc(i.item)}${i.src === 'day' ? '<span class="tagx">加碼</span>' : ''}</span><span class="amt">${money(i.amount)}</span>` +
+    `<button class="del" data-id="${i.id}" aria-label="刪除">×</button></li>`).join('') : '<li class="empty">這個月還沒有加碼或其他收入</li>';
   $('incTotal').textContent = money(otherIn(p));
-  $('items').innerHTML = [...new Set(state.incomes.map(i => i.item))].map(s => `<option value="${esc(s)}">`).join('');
+  fillItems();
   const t = ymd(today);
   if (!$('inDate').value) $('inDate').value = t.startsWith(p) ? t : `${p}-01`;
 }
@@ -387,7 +434,7 @@ function renderReport() {
   document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
   const p = mode === 'month' ? monthKey(cy, cm) : String(cy);
   const h = hoursIn(p), o = otherIn(p), pay = h * state.wage;
-  $('repKpis').innerHTML = kpi('總工時', hrs(h) + ' 小時') + kpi('薪資', money(pay)) + kpi('其他收入', money(o)) + kpi(mode === 'month' ? '本月總收入' : '全年總收入', money(pay + o), true);
+  $('repKpis').innerHTML = kpi('總工時', hrs(h) + ' 小時') + kpi('薪資', money(pay)) + kpi('加碼與其他收入', money(o)) + kpi(mode === 'month' ? '本月總收入' : '全年總收入', money(pay + o), true);
   if (mode === 'month') {
     const total = new Date(cy, cm + 1, 0).getDate();
     const hs = Array.from({ length: total }, (_, i) => state.days[`${p}-${pad(i + 1)}`]?.h || 0);
@@ -397,13 +444,13 @@ function renderReport() {
   } else {
     const ms = Array.from({ length: 12 }, (_, i) => monthKey(cy, i));
     $('chartTitle').textContent = '每月收入（NT$）';
-    $('chartLegend').innerHTML = '<span><i style="background:var(--work)"></i>薪資</span><span><i style="background:var(--other)"></i>其他收入</span>';
+    $('chartLegend').innerHTML = '<span><i style="background:var(--work)"></i>薪資</span><span><i style="background:var(--other)"></i>加碼與其他收入</span>';
     $('chart').innerHTML = barChart([ms.map(m => hoursIn(m) * state.wage), ms.map(otherIn)], ms.map((_, i) => i + 1 + '月'), true);
   }
   const by = {};
   state.incomes.filter(i => i.date.startsWith(p)).forEach(i => by[i.item] = (by[i.item] || 0) + i.amount);
   const rows = Object.entries(by).sort((a, b) => b[1] - a[1]);
-  $('breakList').innerHTML = rows.length ? rows.map(([k, v]) => `<li><span>${esc(k)}</span><span class="amt">${money(v)}</span></li>`).join('') : '<li class="empty">沒有其他收入</li>';
+  $('breakList').innerHTML = rows.length ? rows.map(([k, v]) => `<li><span>${esc(k)}</span><span class="amt">${money(v)}</span></li>`).join('') : '<li class="empty">沒有加碼或其他收入</li>';
 }
 
 function render() {
