@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>收入紀錄表</title>
+<style>
+  :root {
+    --bg:#faf7f2; --surface:#ffffff; --ink:#1f1d1a; --muted:#6b665e; --line:#e7e0d5; --soft:#f3eee6;
+    --accent:#c96442; --accent-ink:#ffffff; --accent-soft:#f6e6de;
+    --work:#3a77a8; --other:#d9a23a;
+    --self:#7a5bb5; --self-soft:#ece6f7; --shop:#b3412e; --shop-soft:#fbe3de; --hol:#2f7d4f; --hol-soft:#dff1e5;
+    --today:#c96442;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:#1c1a17; --surface:#26231f; --ink:#ede8e0; --muted:#a59f95; --line:#3a352e; --soft:#2f2b26;
+      --accent:#e08560; --accent-ink:#1c1a17; --accent-soft:#3d2b22;
+      --work:#6aa6d6; --other:#e6b75a;
+      --self:#b39be0; --self-soft:#352d45; --shop:#ee8a76; --shop-soft:#47291f; --hol:#79c597; --hol-soft:#21392a;
+      --today:#e08560;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#1c1a17; --surface:#26231f; --ink:#ede8e0; --muted:#a59f95; --line:#3a352e; --soft:#2f2b26;
+    --accent:#e08560; --accent-ink:#1c1a17; --accent-soft:#3d2b22;
+    --work:#6aa6d6; --other:#e6b75a;
+    --self:#b39be0; --self-soft:#352d45; --shop:#ee8a76; --shop-soft:#47291f; --hol:#79c597; --hol-soft:#21392a;
+    --today:#e08560;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Microsoft JhengHei","Noto Sans TC",system-ui,sans-serif; font-size:17px; line-height:1.5; }
+  button, input, select { font:inherit; color:inherit; }
+  button { cursor:pointer; }
+  .wrap { max-width:1040px; margin:0 auto; padding:28px 16px 48px; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+  h1 { margin:0; font-size:30px; font-weight:800; }
+  h1 small { font-size:15px; font-weight:400; color:var(--muted); margin-left:8px; }
+  .wage { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:15px; }
+  .wage input { width:84px; padding:6px 10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); text-align:right; }
+
+  .tabs { display:flex; gap:6px; background:var(--soft); padding:5px; border-radius:14px; margin-bottom:18px; }
+  .tabs button { flex:1; border:0; background:none; padding:11px 8px; border-radius:10px; font-weight:700; color:var(--muted); font-size:17px; }
+  .tabs button[aria-selected="true"] { background:var(--surface); color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+
+  .monthbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; }
+  .monthbar h2 { margin:0; font-size:24px; }
+  .nav { display:flex; gap:6px; }
+  .icon { width:42px; height:42px; border-radius:12px; border:1px solid var(--line); background:var(--surface); font-size:20px; display:grid; place-items:center; }
+
+  .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  .kpi { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; }
+  .kpi span { display:block; font-size:14px; color:var(--muted); }
+  .kpi b { font-size:24px; font-variant-numeric:tabular-nums; }
+  .kpi.main { background:var(--accent-soft); border-color:transparent; }
+  .kpi.main b { color:var(--accent); }
+
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:14px; color:var(--muted); margin:-4px 0 10px; }
+  .legend i { display:inline-block; width:12px; height:12px; border-radius:4px; margin-right:6px; vertical-align:-1px; }
+
+  .cal { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+  .dow { text-align:center; font-size:14px; color:var(--muted); font-weight:700; padding:4px 0; }
+  .day { min-height:96px; border:1px solid var(--line); background:var(--surface); border-radius:14px; padding:8px; text-align:left; display:flex; flex-direction:column; gap:3px; }
+  .day:hover { border-color:var(--accent); }
+  .day.blank { visibility:hidden; }
+  .day.today { outline:2px solid var(--today); outline-offset:-2px; }
+  .day .n { font-size:14px; color:var(--muted); }
+  .day .h { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .day .h small { font-size:13px; font-weight:400; color:var(--muted); margin-left:2px; }
+  .day .note { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .day.self { background:var(--self-soft); border-color:transparent; }
+  .day.shop { background:var(--shop-soft); border-color:transparent; }
+  .day.hol  { background:var(--hol-soft);  border-color:transparent; }
+  .chip { display:inline-block; font-size:12px; font-weight:700; padding:1px 8px; border-radius:999px; color:#fff; width:fit-content; }
+  .chip.self { background:var(--self); } .chip.shop { background:var(--shop); } .chip.hol { background:var(--hol); }
+  [data-theme="dark"] .chip, .dark-chip .chip { color:#1c1a17; }
+  .chip .s { display:none; }
+
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px; }
+  .addform { display:grid; grid-template-columns:150px 1fr 140px auto; gap:10px; margin-bottom:16px; }
+  .addform input { padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); min-width:0; }
+  .btn { border:0; background:var(--accent); color:var(--accent-ink); font-weight:700; padding:10px 18px; border-radius:10px; }
+  .btn.ghost { background:var(--soft); color:var(--ink); }
+  .list { list-style:none; margin:0; padding:0; }
+  .list li { display:grid; grid-template-columns:110px 1fr auto 36px; align-items:center; gap:10px; padding:12px 4px; border-bottom:1px solid var(--line); }
+  .list li:last-child { border-bottom:0; }
+  .list .date { color:var(--muted); font-size:15px; font-variant-numeric:tabular-nums; }
+  .list .amt { font-weight:800; font-variant-numeric:tabular-nums; }
+  .list .del { border:0; background:none; color:var(--muted); font-size:20px; }
+  .empty { color:var(--muted); text-align:center; padding:24px 0; }
+  .total { display:flex; justify-content:space-between; font-weight:800; padding-top:12px; margin-top:4px; border-top:2px solid var(--line); }
+
+  .seg { display:inline-flex; background:var(--soft); padding:4px; border-radius:12px; }
+  .seg button { border:0; background:none; padding:8px 16px; border-radius:9px; font-weight:700; color:var(--muted); }
+  .seg button[aria-pressed="true"] { background:var(--surface); color:var(--accent); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+  .chart { width:100%; height:auto; display:block; }
+  .chart .ax { fill:var(--muted); font-size:12px; }
+  .chart .grid { stroke:var(--line); stroke-width:1; }
+  .chart .b-work { fill:var(--work); } .chart .b-other { fill:var(--other); }
+  .chart .val { fill:var(--ink); font-size:11px; font-weight:700; }
+  .grid2 { display:grid; grid-template-columns:2fr 1fr; gap:14px; }
+  .card h3 { margin:0 0 12px; font-size:17px; }
+  .break li { grid-template-columns:1fr auto; }
+
+  dialog { border:0; border-radius:20px; padding:0; width:min(440px, calc(100vw - 32px)); background:var(--surface); color:var(--ink); box-shadow:0 20px 60px rgba(0,0,0,.25); }
+  dialog::backdrop { background:rgba(20,16,12,.45); }
+  .dlg { padding:22px; display:flex; flex-direction:column; gap:16px; }
+  .dlg h3 { margin:0; font-size:22px; }
+  .dlg label { font-size:14px; color:var(--muted); font-weight:700; display:block; margin-bottom:6px; }
+  .hrs { display:flex; align-items:center; gap:10px; }
+  .hrs input { width:110px; font-size:28px; font-weight:800; text-align:center; padding:6px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
+  .quick { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .quick button, .tagpick button { border:1px solid var(--line); background:var(--surface); border-radius:999px; padding:6px 14px; font-weight:700; }
+  .tagpick { display:flex; gap:8px; flex-wrap:wrap; }
+  .tagpick button[aria-pressed="true"].self { background:var(--self); border-color:var(--self); color:#fff; }
+  .tagpick button[aria-pressed="true"].shop { background:var(--shop); border-color:var(--shop); color:#fff; }
+  .tagpick button[aria-pressed="true"].hol  { background:var(--hol);  border-color:var(--hol);  color:#fff; }
+  .dlg .note-in { width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+  .dlg .acts { display:flex; justify-content:space-between; gap:8px; }
+  footer { margin-top:28px; text-align:center; font-size:14px; color:var(--muted); }
+  footer button { border:0; background:none; color:var(--muted); text-decoration:underline; }
+  [hidden] { display:none !important; }
+
+  @media (max-width: 720px) {
+    h1 { font-size:24px; }
+    .kpis { grid-template-columns:repeat(2,1fr); }
+    .kpi b { font-size:20px; }
+    .cal { gap:4px; }
+    .day { min-height:68px; padding:5px; border-radius:10px; }
+    .day .h { font-size:17px; }
+    .day .h small, .day .note { display:none; }
+    .chip { padding:0 5px; }
+    .chip .f { display:none; } .chip .s { display:inline; }
+    .addform { grid-template-columns:1fr 1fr; }
+    .addform .item { grid-column:1 / -1; order:-1; }
+    .addform .btn { grid-column:1 / -1; }
+    .list li { grid-template-columns:84px 1fr auto 30px; }
+    .grid2 { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>收入紀錄表<small>示範資料</small></h1>
+    <label class="wage">時薪 NT$ <input id="wage" type="number" min="0" step="1" inputmode="numeric"></label>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="calendar">📅 行事曆</button>
+    <button role="tab" data-tab="ledger">💰 記帳本</button>
+    <button role="tab" data-tab="report">📊 報表</button>
+  </nav>
+
+  <div class="monthbar">
+    <h2 id="period"></h2>
+    <div class="nav">
+      <button class="icon" id="prev" aria-label="上一期">‹</button>
+      <button class="icon" id="next" aria-label="下一期">›</button>
+    </div>
+  </div>
+
+  <section id="calendar">
+    <div class="kpis" id="calKpis"></div>
+    <div class="legend">
+      <span><i style="background:var(--self)"></i>自休</span>
+      <span><i style="background:var(--shop)"></i>店休</span>
+      <span><i style="background:var(--hol)"></i>國定假日</span>
+      <span>點日期就能填工時、休息日和備註</span>
+    </div>
+    <div class="cal" id="cal"></div>
+  </section>
+
+  <section id="ledger" hidden>
+    <form class="addform card" id="addForm">
+      <input type="date" id="inDate" required aria-label="日期">
+      <input class="item" id="inItem" list="items" placeholder="項目，例如：獎學金" required aria-label="項目">
+      <input type="number" id="inAmt" min="1" placeholder="金額" required inputmode="numeric" aria-label="金額">
+      <button class="btn">＋ 新增</button>
+      <datalist id="items"></datalist>
+    </form>
+    <div class="card">
+      <ul class="list" id="incList"></ul>
+      <div class="total"><span>本月其他收入</span><span id="incTotal"></span></div>
+    </div>
+  </section>
+
+  <section id="report" hidden>
+    <div style="margin-bottom:14px"><div class="seg" id="seg">
+      <button data-mode="month">月報表</button><button data-mode="year">年報表</button>
+    </div></div>
+    <div class="kpis" id="repKpis"></div>
+    <div class="grid2">
+      <div class="card"><h3 id="chartTitle"></h3><div class="legend" id="chartLegend"></div><div id="chart"></div></div>
+      <div class="card"><h3>其他收入明細</h3><ul class="list break" id="breakList"></ul></div>
+    </div>
+  </section>
+
+  <footer>資料只存在這台裝置的瀏覽器裡 · <button id="reset">重設示範資料</button></footer>
+</div>
+
+<dialog id="dlg">
+  <form method="dialog" class="dlg" id="dayForm">
+    <h3 id="dlgTitle"></h3>
+    <div>
+      <label for="dHours">工時（小時）</label>
+      <div class="hrs"><input id="dHours" type="number" min="0" max="24" step="0.25" inputmode="decimal"><span id="dPay" style="color:var(--muted)"></span></div>
+      <div class="quick" id="quick"></div>
+    </div>
+    <div>
+      <label>休息日標籤</label>
+      <div class="tagpick" id="tagpick"></div>
+    </div>
+    <div>
+      <label for="dNote">其他項目／備註</label>
+      <input id="dNote" class="note-in" maxlength="40" placeholder="例如：國慶加班、代班">
+    </div>
+    <div class="acts">
+      <button type="button" class="btn ghost" id="dClear">清除這天</button>
+      <span style="display:flex;gap:8px">
+        <button type="button" class="btn ghost" id="dCancel">取消</button>
+        <button class="btn" id="dSave">儲存</button>
+      </span>
+    </div>
+  </form>
+</dialog>
+
+<script>
+const KEY = 'income-tracker-demo';
+const TAGS = [{ id: '自休', cls: 'self', s: '自' }, { id: '店休', cls: 'shop', s: '店' }, { id: '國定假日', cls: 'hol', s: '假' }];
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const money = n => 'NT$ ' + Math.round(n).toLocaleString('zh-TW');
+const hrs = n => (Math.round(n * 100) / 100).toString();
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = id => document.getElementById(id);
+
+function seed() {
+  let r = 7;
+  const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  const days = {};
+  const end = new Date(); end.setDate(end.getDate() - 1);
+  for (let d = new Date(2026, 1, 1); d <= end; d.setDate(d.getDate() + 1)) {
+    const wd = d.getDay();
+    let h = 0, tags = [];
+    if (wd === 1) { if (d.getDate() % 14 < 7) tags = ['店休']; }
+    else if (wd === 0 || wd === 6) h = [6, 6.5, 7, 7.5, 8][Math.floor(rnd() * 5)];
+    else { const x = rnd(); if (x >= 0.3) { if (x < 0.38) tags = ['自休']; else h = Math.round((2 + rnd() * 4) * 4) / 4; } }
+    if (h || tags.length) days[ymd(d)] = { h, tags, note: '' };
+  }
+  for (const k of ['2026-02-17', '2026-04-04', '2026-06-19', '2026-09-25', '2026-10-10']) {
+    days[k] = { h: days[k]?.h || 0, tags: ['國定假日'], note: '' };
+  }
+  days['2026-10-10'].h = 8; days['2026-10-10'].note = '國慶加班';
+  days['2026-10-22'] = { h: 4, tags: [], note: '幫同事代班' };
+  const incomes = [];
+  let id = 1;
+  for (let m = 2; m <= 11; m++) {
+    incomes.push({ id: id++, date: `2026-${pad(m)}-05`, item: '家人給的生活費', amount: 2000 });
+    if (m < 11) incomes.push({ id: id++, date: `2026-${pad(m)}-10`, item: '租屋補助', amount: 5600 });
+  }
+  [['2026-02-20', '獎學金', 5000], ['2026-03-25', '發票中獎', 500], ['2026-04-18', '二手拍賣', 1240],
+   ['2026-05-30', '生日紅包', 3000], ['2026-07-15', '獎學金', 5000], ['2026-09-12', '二手拍賣', 860]]
+    .forEach(([date, item, amount]) => incomes.push({ id: id++, date, item, amount }));
+  return { wage: 190, days, incomes, nextId: id };
+}
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.days && s.incomes) return s; } catch (e) {} return seed(); }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+let state = load();
+const qs = new URLSearchParams(location.search);
+const today = new Date();
+let [cy, cm] = (qs.get('month') || `${today.getFullYear()}-${today.getMonth() + 1}`).split('-').map(Number);
+cm -= 1;
+let tab = ['calendar', 'ledger', 'report'].includes(qs.get('tab')) ? qs.get('tab') : 'calendar';
+let mode = qs.get('mode') === 'year' ? 'year' : 'month';
+
+const monthKey = (y, m) => `${y}-${pad(m + 1)}`;
+const hoursIn = p => Object.entries(state.days).filter(([k]) => k.startsWith(p)).reduce((a, [, v]) => a + (v.h || 0), 0);
+const workDays = p => Object.entries(state.days).filter(([k, v]) => k.startsWith(p) && v.h > 0).length;
+const otherIn = p => state.incomes.filter(i => i.date.startsWith(p)).reduce((a, i) => a + i.amount, 0);
+const kpi = (label, value, main) => `<div class="kpi${main ? ' main' : ''}"><span>${label}</span><b>${value}</b></div>`;
+
+function renderHeader() {
+  const yearView = tab === 'report' && mode === 'year';
+  $('period').textContent = yearView ? `${cy} 年` : `${cy} 年 ${cm + 1} 月`;
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
+  document.querySelectorAll('main, section').forEach(s => s.hidden = s.id !== tab);
+}
+
+function renderCalendar() {
+  const p = monthKey(cy, cm), h = hoursIn(p), o = otherIn(p);
+  $('calKpis').innerHTML = kpi('本月工時', hrs(h) + ' 小時') + kpi('上班天數', workDays(p) + ' 天') +
+    kpi('預估薪資', money(h * state.wage)) + kpi('本月總收入', money(h * state.wage + o), true);
+  const first = (new Date(cy, cm, 1).getDay() + 6) % 7, total = new Date(cy, cm + 1, 0).getDate();
+  let html = '一二三四五六日'.split('').map(d => `<div class="dow">${d}</div>`).join('');
+  html += '<div class="day blank"></div>'.repeat(first);
+  for (let d = 1; d <= total; d++) {
+    const k = `${p}-${pad(d)}`, v = state.days[k];
+    const tag = v && TAGS.find(t => v.tags.includes(t.id));
+    const cls = ['day', tag ? tag.cls : '', k === ymd(today) ? 'today' : ''].join(' ');
+    html += `<button class="${cls}" data-k="${k}"><span class="n">${d}</span>` +
+      (v && v.h ? `<span class="h">${hrs(v.h)}<small>小時</small></span>` : '') +
+      (v ? v.tags.map(id => { const t = TAGS.find(x => x.id === id); return `<span class="chip ${t.cls}"><span class="f">${t.id}</span><span class="s">${t.s}</span></span>`; }).join('') : '') +
+      (v && v.note ? `<span class="note">${esc(v.note)}</span>` : '') + '</button>';
+  }
+  $('cal').innerHTML = html;
+}
+
+let editing = null;
+function openDay(k) {
+  editing = k;
+  const v = state.days[k] || { h: 0, tags: [], note: '' };
+  const [y, m, d] = k.split('-').map(Number);
+  $('dlgTitle').textContent = `${m} 月 ${d} 日（${'日一二三四五六'[new Date(y, m - 1, d).getDay()]}）`;
+  $('dHours').value = v.h || '';
+  $('dNote').value = v.note || '';
+  $('quick').innerHTML = [0, 3, 4, 5, 6, 7, 8].map(n => `<button type="button" data-h="${n}">${n === 0 ? '沒上班' : n + ' 小時'}</button>`).join('');
+  $('tagpick').innerHTML = TAGS.map(t => `<button type="button" class="${t.cls}" data-t="${t.id}" aria-pressed="${v.tags.includes(t.id)}">${t.id}</button>`).join('');
+  updatePay();
+  $('dlg').showModal();
+}
+function updatePay() { const h = parseFloat($('dHours').value) || 0; $('dPay').textContent = h ? `≈ ${money(h * state.wage)}` : ''; }
+$('cal').addEventListener('click', e => { const b = e.target.closest('.day[data-k]'); if (b) openDay(b.dataset.k); });
+$('dHours').addEventListener('input', updatePay);
+$('quick').addEventListener('click', e => { const b = e.target.closest('[data-h]'); if (!b) return; $('dHours').value = b.dataset.h === '0' ? '' : b.dataset.h; updatePay(); });
+$('tagpick').addEventListener('click', e => {
+  const b = e.target.closest('[data-t]'); if (!b) return;
+  const on = b.getAttribute('aria-pressed') !== 'true';
+  $('tagpick').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+  b.setAttribute('aria-pressed', on);
+});
+$('dayForm').addEventListener('submit', () => {
+  const h = Math.max(0, Math.min(24, parseFloat($('dHours').value) || 0));
+  const tags = [...$('tagpick').querySelectorAll('[aria-pressed="true"]')].map(b => b.dataset.t);
+  const note = $('dNote').value.trim();
+  if (h || tags.length || note) state.days[editing] = { h, tags, note }; else delete state.days[editing];
+  save(); render();
+});
+$('dClear').onclick = () => { delete state.days[editing]; save(); $('dlg').close(); render(); };
+$('dCancel').onclick = () => $('dlg').close();
+
+function renderLedger() {
+  const p = monthKey(cy, cm);
+  const rows = state.incomes.filter(i => i.date.startsWith(p)).sort((a, b) => b.date.localeCompare(a.date));
+  $('incList').innerHTML = rows.length ? rows.map(i =>
+    `<li><span class="date">${i.date.slice(5).replace('-', '/')}</span><span>${esc(i.item)}</span><span class="amt">${money(i.amount)}</span>` +
+    `<button class="del" data-id="${i.id}" aria-label="刪除">×</button></li>`).join('') : '<li class="empty">這個月還沒有其他收入</li>';
+  $('incTotal').textContent = money(otherIn(p));
+  $('items').innerHTML = [...new Set(state.incomes.map(i => i.item))].map(s => `<option value="${esc(s)}">`).join('');
+  const t = ymd(today);
+  if (!$('inDate').value) $('inDate').value = t.startsWith(p) ? t : `${p}-01`;
+}
+$('incList').addEventListener('click', e => {
+  const b = e.target.closest('[data-id]'); if (!b) return;
+  state.incomes = state.incomes.filter(i => i.id !== +b.dataset.id); save(); render();
+});
+$('addForm').addEventListener('submit', e => {
+  e.preventDefault();
+  state.incomes.push({ id: state.nextId++, date: $('inDate').value, item: $('inItem').value.trim(), amount: Math.round(+$('inAmt').value) });
+  $('inItem').value = ''; $('inAmt').value = ''; save(); render();
+});
+
+function barChart(groups, labels, stacked) {
+  const W = 640, H = 260, L = 44, B = 26, T = 18, n = labels.length;
+  const totals = groups[0].map((_, i) => groups.reduce((a, g) => a + g[i], 0));
+  const max = Math.max(1, ...totals), step = niceStep(max), top = Math.ceil(max / step) * step;
+  const bw = (W - L) / n, y = v => T + (H - T - B) * (1 - v / top);
+  let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">`;
+  for (let v = 0; v <= top; v += step) s += `<line class="grid" x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${stacked ? (v / 1000) + 'k' : v}</text>`;
+  labels.forEach((lab, i) => {
+    let base = 0;
+    const x = L + i * bw + bw * 0.18, w = bw * 0.64;
+    groups.forEach((g, gi) => {
+      if (g[i] > 0) s += `<rect class="${gi ? 'b-other' : 'b-work'}" x="${x}" y="${y(base + g[i])}" width="${w}" height="${y(base) - y(base + g[i])}" rx="2"/>`;
+      base += g[i];
+    });
+    if (stacked && totals[i]) s += `<text class="val" x="${x + w / 2}" y="${y(totals[i]) - 5}" text-anchor="middle">${(totals[i] / 1000).toFixed(1)}k</text>`;
+    if (!stacked && n > 12 && (i + 1) % 5 !== 0 && i !== 0) return;
+    s += `<text class="ax" x="${x + w / 2}" y="${H - 8}" text-anchor="middle">${lab}</text>`;
+  });
+  return s + '</svg>';
+}
+function niceStep(max) { const raw = max / 4, p = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map(m => m * p).find(v => v >= raw); }
+
+function renderReport() {
+  document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === mode));
+  const p = mode === 'month' ? monthKey(cy, cm) : String(cy);
+  const h = hoursIn(p), o = otherIn(p), pay = h * state.wage;
+  $('repKpis').innerHTML = kpi('總工時', hrs(h) + ' 小時') + kpi('薪資', money(pay)) + kpi('其他收入', money(o)) + kpi(mode === 'month' ? '本月總收入' : '全年總收入', money(pay + o), true);
+  if (mode === 'month') {
+    const total = new Date(cy, cm + 1, 0).getDate();
+    const hs = Array.from({ length: total }, (_, i) => state.days[`${p}-${pad(i + 1)}`]?.h || 0);
+    $('chartTitle').textContent = '每日工時（小時）';
+    $('chartLegend').innerHTML = '<span><i style="background:var(--work)"></i>工時</span>';
+    $('chart').innerHTML = barChart([hs], hs.map((_, i) => i + 1), false);
+  } else {
+    const ms = Array.from({ length: 12 }, (_, i) => monthKey(cy, i));
+    $('chartTitle').textContent = '每月收入（NT$）';
+    $('chartLegend').innerHTML = '<span><i style="background:var(--work)"></i>薪資</span><span><i style="background:var(--other)"></i>其他收入</span>';
+    $('chart').innerHTML = barChart([ms.map(m => hoursIn(m) * state.wage), ms.map(otherIn)], ms.map((_, i) => i + 1 + '月'), true);
+  }
+  const by = {};
+  state.incomes.filter(i => i.date.startsWith(p)).forEach(i => by[i.item] = (by[i.item] || 0) + i.amount);
+  const rows = Object.entries(by).sort((a, b) => b[1] - a[1]);
+  $('breakList').innerHTML = rows.length ? rows.map(([k, v]) => `<li><span>${esc(k)}</span><span class="amt">${money(v)}</span></li>`).join('') : '<li class="empty">沒有其他收入</li>';
+}
+
+function render() {
+  renderHeader();
+  if (tab === 'calendar') renderCalendar();
+  if (tab === 'ledger') renderLedger();
+  if (tab === 'report') renderReport();
+}
+function shift(dir) {
+  if (tab === 'report' && mode === 'year') cy += dir;
+  else { cm += dir; if (cm < 0) { cm = 11; cy--; } if (cm > 11) { cm = 0; cy++; } }
+  $('inDate').value = '';
+  render();
+}
+$('prev').onclick = () => shift(-1);
+$('next').onclick = () => shift(1);
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => { tab = b.dataset.tab; render(); });
+$('seg').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) { mode = b.dataset.mode; render(); } });
+$('wage').value = state.wage;
+$('wage').addEventListener('input', () => { state.wage = Math.max(0, +$('wage').value || 0); save(); render(); });
+$('reset').onclick = () => { if (confirm('要清除目前資料，改回示範資料嗎？')) { state = seed(); save(); $('wage').value = state.wage; render(); } };
+render();
+if (tab === 'calendar' && /^\d{4}-\d{2}-\d{2}$/.test(qs.get('day') || '')) openDay(qs.get('day'));
+</script>
+</body>
+</html>
